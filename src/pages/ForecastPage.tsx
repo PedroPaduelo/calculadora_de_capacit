@@ -37,7 +37,7 @@ import { useApp } from '../contexts/AppContext';
 import { validateForecast, generateSampleForecast, calculateIntervalStaffing, calculateTotalFTE, calculateAverageServiceLevel, calculateTotalShrinkage } from '../utils/advancedErlangC';
 import { formatDecimal, formatPercentageValue, formatFTE } from '../utils/formatters';
 import { generateTimeIntervals, createEmptyForecastPoints, fillMissingIntervals, calculateTotalOperationHours } from '../utils/intervalUtils';
-import { LoadingOverlay } from '../components/ui';
+import { LoadingOverlay, useConfirmDialog } from '../components/ui';
 
 const ForecastPage: React.FC = () => {
   const { state, dispatch, getCurrentOperation, saveForecast, updateForecast, deleteForecast } = useApp();
@@ -46,6 +46,7 @@ const ForecastPage: React.FC = () => {
   const [showPreview, setShowPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showConfirm, ConfirmDialog } = useConfirmDialog();
 
   const currentOperation = getCurrentOperation();
   const operationForecasts = currentOperation 
@@ -64,17 +65,30 @@ const ForecastPage: React.FC = () => {
   };
 
   const handleDeleteForecast = async (forecastId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este forecast?')) {
-      setIsLoading(true);
-      try {
-        await deleteForecast(forecastId);
-      } catch (error) {
-        console.error('Error deleting forecast:', error);
-        alert('Erro ao excluir forecast. Tente novamente.');
-      } finally {
-        setIsLoading(false);
+    showConfirm({
+      title: 'Excluir Forecast',
+      message: 'Tem certeza que deseja excluir este forecast?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          await deleteForecast(forecastId);
+        } catch (error) {
+          console.error('Error deleting forecast:', error);
+          showConfirm({
+            title: 'Erro',
+            message: 'Erro ao excluir forecast. Tente novamente.',
+            confirmText: 'OK',
+            type: 'danger',
+            onConfirm: () => {}
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }
+    });
   };
 
   const handleDuplicateForecast = async (forecast: Forecast) => {
@@ -91,7 +105,13 @@ const ForecastPage: React.FC = () => {
       await saveForecast(newForecast);
     } catch (error) {
       console.error('Error duplicating forecast:', error);
-      alert('Erro ao duplicar forecast. Tente novamente.');
+      showConfirm({
+        title: 'Erro',
+        message: 'Erro ao duplicar forecast. Tente novamente.',
+        confirmText: 'OK',
+        type: 'danger',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +234,13 @@ const ForecastPage: React.FC = () => {
               setShowCreateForm(false);
             } catch (error) {
               console.error('Error saving forecast:', error);
-              alert('Erro ao salvar forecast. Tente novamente.');
+              showConfirm({
+                title: 'Erro',
+                message: 'Erro ao salvar forecast. Tente novamente.',
+                confirmText: 'OK',
+                type: 'danger',
+                onConfirm: () => {}
+              });
             } finally {
               setIsLoading(false);
             }
@@ -229,6 +255,9 @@ const ForecastPage: React.FC = () => {
           onClose={() => setShowPreview(null)}
         />
       )}
+      
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
       </div>
     </LoadingOverlay>
   );

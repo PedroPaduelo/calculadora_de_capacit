@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { calculateAdvancedErlangC } from '../utils/advancedErlangC';
 import ScenarioComparison from '../components/ScenarioComparison';
 import { formatFTE, formatPercentageValue, formatInteger, formatTime } from '../utils/formatters';
+import { useConfirmDialog } from '../components/ui';
 
 interface ScenarioFormData {
   name: string;
@@ -39,6 +40,7 @@ export const ScenariosPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { showConfirm, ConfirmDialog } = useConfirmDialog();
   const [showComparison, setShowComparison] = useState(false);
   const [formData, setFormData] = useState<ScenarioFormData>({
     name: '',
@@ -148,7 +150,13 @@ export const ScenariosPage: React.FC = () => {
       setEditingScenario(null);
     } catch (error) {
       console.error('Error saving scenario:', error);
-      alert('Erro ao salvar cenário. Verifique os dados e tente novamente.');
+      showConfirm({
+        title: 'Erro',
+        message: 'Erro ao salvar cenário. Verifique os dados e tente novamente.',
+        confirmText: 'OK',
+        type: 'danger',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -160,14 +168,27 @@ export const ScenariosPage: React.FC = () => {
   };
 
   const handleDelete = async (scenarioId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este cenário?')) {
-      try {
-        await deleteScenario(scenarioId);
-      } catch (error) {
-        console.error('Error deleting scenario:', error);
-        alert('Erro ao excluir cenário.');
+    showConfirm({
+      title: 'Excluir Cenário',
+      message: 'Tem certeza que deseja excluir este cenário?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteScenario(scenarioId);
+        } catch (error) {
+          console.error('Error deleting scenario:', error);
+          showConfirm({
+            title: 'Erro',
+            message: 'Erro ao excluir cenário.',
+            confirmText: 'OK',
+            type: 'danger',
+            onConfirm: () => {}
+          });
+        }
       }
-    }
+    });
   };
 
   const handleDuplicate = async (scenarioId: string) => {
@@ -176,7 +197,13 @@ export const ScenariosPage: React.FC = () => {
       await duplicateScenario(scenarioId);
     } catch (error) {
       console.error('Error duplicating scenario:', error);
-      alert('Erro ao duplicar cenário.');
+      showConfirm({
+        title: 'Erro',
+        message: 'Erro ao duplicar cenário.',
+        confirmText: 'OK',
+        type: 'danger',
+        onConfirm: () => {}
+      });
     } finally {
       setIsLoading(false);
     }
@@ -539,6 +566,9 @@ export const ScenariosPage: React.FC = () => {
           onClose={() => setShowComparison(false)}
         />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
     </div>
   );
 };

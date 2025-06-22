@@ -20,6 +20,7 @@ const OperationsPage: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingOperation, setEditingOperation] = useState<Operation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { showConfirm, ConfirmDialog } = useConfirmDialog();
 
   const handleCreateOperation = () => {
     setEditingOperation(null);
@@ -32,17 +33,30 @@ const OperationsPage: React.FC = () => {
   };
 
   const handleDeleteOperation = async (operationId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta operação? Todos os forecasts relacionados serão perdidos.')) {
-      setIsLoading(true);
-      try {
-        await deleteOperation(operationId);
-      } catch (error) {
-        console.error('Error deleting operation:', error);
-        alert('Erro ao excluir operação. Tente novamente.');
-      } finally {
-        setIsLoading(false);
+    showConfirm({
+      title: 'Excluir Operação',
+      message: 'Tem certeza que deseja excluir esta operação? Todos os forecasts relacionados serão perdidos.',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          await deleteOperation(operationId);
+        } catch (error) {
+          console.error('Error deleting operation:', error);
+          showConfirm({
+            title: 'Erro',
+            message: 'Erro ao excluir operação. Tente novamente.',
+            confirmText: 'OK',
+            type: 'danger',
+            onConfirm: () => {}
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }
+    });
   };
 
   const handleSelectOperation = (operationId: string) => {
@@ -50,18 +64,37 @@ const OperationsPage: React.FC = () => {
   };
 
   const handleDuplicateOperation = async (operation: Operation) => {
-    if (window.confirm(`Tem certeza que deseja duplicar a operação "${operation.name}"? Todos os forecasts e cenários relacionados também serão duplicados.`)) {
-      setIsLoading(true);
-      try {
-        const duplicatedOperation = await duplicateOperation(operation.id);
-        alert(`Operação duplicada com sucesso! Nova operação: "${duplicatedOperation.name}"`);
-      } catch (error) {
-        console.error('Error duplicating operation:', error);
-        alert('Erro ao duplicar operação. Tente novamente.');
-      } finally {
-        setIsLoading(false);
+    showConfirm({
+      title: 'Duplicar Operação',
+      message: `Tem certeza que deseja duplicar a operação "${operation.name}"? Todos os forecasts e cenários relacionados também serão duplicados.`,
+      confirmText: 'Duplicar',
+      cancelText: 'Cancelar',
+      type: 'info',
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          const duplicatedOperation = await duplicateOperation(operation.id);
+          showConfirm({
+            title: 'Sucesso',
+            message: `Operação duplicada com sucesso! Nova operação: "${duplicatedOperation.name}"`,
+            confirmText: 'OK',
+            type: 'success',
+            onConfirm: () => {}
+          });
+        } catch (error) {
+          console.error('Error duplicating operation:', error);
+          showConfirm({
+            title: 'Erro',
+            message: 'Erro ao duplicar operação. Tente novamente.',
+            confirmText: 'OK',
+            type: 'danger',
+            onConfirm: () => {}
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }
+    });
   };
 
   return (
@@ -149,13 +182,22 @@ const OperationsPage: React.FC = () => {
               setShowCreateForm(false);
             } catch (error) {
               console.error('Error saving operation:', error);
-              alert('Erro ao salvar operação. Tente novamente.');
+              showConfirm({
+                title: 'Erro',
+                message: 'Erro ao salvar operação. Tente novamente.',
+                confirmText: 'OK',
+                type: 'danger',
+                onConfirm: () => {}
+              });
             } finally {
               setIsLoading(false);
             }
           }}
         />
       )}
+      
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
       </div>
     </LoadingOverlay>
   );

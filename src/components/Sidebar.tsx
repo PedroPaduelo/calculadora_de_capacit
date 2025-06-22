@@ -152,17 +152,17 @@ const Sidebar: React.FC<SidebarProps> = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700"
+          className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">
               Operação Atual
             </p>
           </div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {currentOperation.name}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-500 dark:text-gray-300">
             {currentOperation.type === '24h' ? '24 horas' : 
              `${currentOperation.startTime} - ${currentOperation.endTime}`}
           </p>
