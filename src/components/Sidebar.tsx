@@ -1,0 +1,201 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Building2, 
+  TrendingUp, 
+  BarChart3, 
+  GitCompare,
+  ChevronLeft,
+  ChevronRight,
+  Plus
+} from 'lucide-react';
+import { PageType, NavigationItem } from '../types';
+import { useApp } from '../contexts/AppContext';
+
+interface SidebarProps {
+  currentPage: PageType;
+  onPageChange: (page: PageType) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
+  const { state, dispatch, getCurrentOperation } = useApp();
+  const { sidebarCollapsed } = state.config;
+  const currentOperation = getCurrentOperation();
+
+  const navigationItems: NavigationItem[] = [
+    {
+      id: PageType.OPERATIONS,
+      label: 'Operações',
+      icon: 'Building2',
+      description: 'Configurar operações'
+    },
+    {
+      id: PageType.FORECAST,
+      label: 'Forecast',
+      icon: 'TrendingUp',
+      description: 'Curva e parâmetros',
+      disabled: !currentOperation
+    },
+    {
+      id: PageType.RESULTS,
+      label: 'Resultados',
+      icon: 'BarChart3',
+      description: 'Dimensionamento',
+      disabled: !currentOperation
+    },
+    {
+      id: PageType.SCENARIOS,
+      label: 'Cenários',
+      icon: 'GitCompare',
+      description: 'Comparar cenários',
+      disabled: !currentOperation
+    }
+  ];
+
+  const getIcon = (iconName: string) => {
+    const icons = {
+      Building2,
+      TrendingUp,
+      BarChart3,
+      GitCompare
+    };
+    const IconComponent = icons[iconName as keyof typeof icons];
+    return IconComponent ? <IconComponent className="w-5 h-5" /> : null;
+  };
+
+  const toggleSidebar = () => {
+    dispatch({ type: 'TOGGLE_SIDEBAR' });
+  };
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ width: sidebarCollapsed ? 80 : 280 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col"
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2"
+            >
+              <div className="p-1.5 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  WFM Calculator
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Advanced Erlang C
+                </p>
+              </div>
+            </motion.div>
+          )}
+          
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Current Operation Info */}
+      {!sidebarCollapsed && currentOperation && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Operação Atual
+            </p>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            {currentOperation.name}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {currentOperation.type === '24h' ? '24 horas' : 
+             `${currentOperation.startTime} - ${currentOperation.endTime}`}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4">
+        <div className="space-y-2">
+          {navigationItems.map((item) => {
+            const isActive = currentPage === item.id;
+            const isDisabled = item.disabled;
+
+            return (
+              <motion.button
+                key={item.id}
+                onClick={() => !isDisabled && onPageChange(item.id)}
+                disabled={isDisabled}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                  ${isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' 
+                    : isDisabled
+                      ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                  }
+                  ${sidebarCollapsed ? 'justify-center' : ''}
+                `}
+                whileHover={!isDisabled ? { scale: 1.02 } : {}}
+                whileTap={!isDisabled ? { scale: 0.98 } : {}}
+              >
+                <div className={`flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+                  {getIcon(item.icon)}
+                </div>
+                
+                {!sidebarCollapsed && (
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {item.label}
+                    </p>
+                    {item.description && (
+                      <p className="text-xs opacity-75 truncate">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Quick Actions */}
+      {!sidebarCollapsed && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <motion.button
+            onClick={() => onPageChange(PageType.OPERATIONS)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus className="w-4 h-4" />
+            Nova Operação
+          </motion.button>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+export default Sidebar;

@@ -69,8 +69,7 @@ export function calculateCallCenterStaffing(params: CallCenterParams): CallCente
     callsPerHour, 
     averageHandleTime, 
     serviceLevel: targetServiceLevel, 
-    targetAnswerTime,
-    abandonmentRate = 0 
+    targetAnswerTime
   } = params;
 
   // Converter para Erlangs (intensidade de tráfego)
