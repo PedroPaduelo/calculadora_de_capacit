@@ -223,6 +223,7 @@ const ForecastPage: React.FC = () => {
           operation={currentOperation}
           forecast={editingForecast}
           onClose={() => setShowCreateForm(false)}
+          showConfirm={showConfirm}
           onSave={async (forecast) => {
             setIsLoading(true);
             try {
@@ -450,13 +451,15 @@ interface ForecastFormModalProps {
   forecast: Forecast | null;
   onClose: () => void;
   onSave: (forecast: Forecast) => void;
+  showConfirm: (options: any) => void;
 }
 
 const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
   operation,
   forecast,
   onClose,
-  onSave
+  onSave,
+  showConfirm
 }) => {
   const [formData, setFormData] = useState({
     name: forecast?.name || '',
@@ -496,6 +499,18 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalShrinkage = calculateTotalShrinkage(shrinkageConfig);
+
+  // Função para recalcular TMA médio baseado nos pontos
+  const recalculateAverageAht = (currentPoints: ForecastPoint[]) => {
+    const pointsWithAht = currentPoints.filter(point => point.aht && point.aht > 0);
+    if (pointsWithAht.length > 0) {
+      const totalCalls = pointsWithAht.reduce((sum, point) => sum + point.calls, 0);
+      const weightedAhtSum = pointsWithAht.reduce((sum, point) => sum + (point.calls * (point.aht || 0)), 0);
+      const calculatedAverageAht = totalCalls > 0 ? Math.round(weightedAhtSum / totalCalls) : formData.averageAht;
+      
+      setFormData(prev => ({ ...prev, averageAht: calculatedAverageAht }));
+    }
+  };
 
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -538,8 +553,37 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
             throw new Error('Nenhum dado válido encontrado no arquivo');
           }
           
+          // Detectar intervalo automaticamente baseado nos tempos
+          let detectedInterval: ForecastInterval = 15;
+          if (newPoints.length >= 2) {
+            const time1 = newPoints[0].time.split(':');
+            const time2 = newPoints[1].time.split(':');
+            const minutes1 = parseInt(time1[0]) * 60 + parseInt(time1[1]);
+            const minutes2 = parseInt(time2[0]) * 60 + parseInt(time2[1]);
+            const diffMinutes = Math.abs(minutes2 - minutes1);
+            
+            if (diffMinutes === 15) detectedInterval = 15;
+            else if (diffMinutes === 30) detectedInterval = 30;
+            else if (diffMinutes === 60) detectedInterval = 60;
+          }
+          
           setPoints(newPoints);
           setInputMethod('csv');
+          
+          // Atualizar o campo de intervalo
+          setFormData(prev => ({ ...prev, interval: detectedInterval }));
+          
+          // Recalcular TMA médio baseado nos dados importados
+          setTimeout(() => recalculateAverageAht(newPoints), 100);
+          
+          // Mostrar notificação de sucesso
+          showConfirm({
+            title: 'Upload realizado com sucesso!',
+            message: `${newPoints.length} intervalos de ${detectedInterval} minutos foram importados do arquivo CSV.`,
+            confirmText: 'OK',
+            type: 'success',
+            onConfirm: () => {}
+          });
         } catch (error) {
           setCsvError(error instanceof Error ? error.message : 'Erro ao processar arquivo CSV');
         }
@@ -548,6 +592,34 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
         setCsvError(`Erro ao ler arquivo: ${error.message}`);
       }
     });
+  };
+
+  const downloadCSVExample = () => {
+    const exampleData = [
+      { 'Horário': '08:00', 'Chamadas': 45, 'TMA': 180 },
+      { 'Horário': '08:15', 'Chamadas': 52, 'TMA': 185 },
+      { 'Horário': '08:30', 'Chamadas': 48, 'TMA': 175 },
+      { 'Horário': '08:45', 'Chamadas': 55, 'TMA': 190 },
+      { 'Horário': '09:00', 'Chamadas': 62, 'TMA': 195 },
+      { 'Horário': '09:15', 'Chamadas': 58, 'TMA': 188 },
+      { 'Horário': '09:30', 'Chamadas': 67, 'TMA': 200 },
+      { 'Horário': '09:45', 'Chamadas': 71, 'TMA': 205 },
+      { 'Horário': '10:00', 'Chamadas': 75, 'TMA': 210 },
+      { 'Horário': '10:15', 'Chamadas': 69, 'TMA': 198 },
+      { 'Horário': '10:30', 'Chamadas': 73, 'TMA': 203 },
+      { 'Horário': '10:45', 'Chamadas': 68, 'TMA': 192 }
+    ];
+
+    const csv = Papa.unparse(exampleData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'exemplo-forecast.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const generateSample = () => {
@@ -894,15 +966,25 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                   onChange={handleCSVUpload}
                   className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="btn-primary mb-2"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Selecionar Arquivo CSV
-                </button>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-primary"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Selecionar Arquivo CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadCSVExample}
+                    className="btn-secondary"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Exemplo
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                   Formato esperado: Horário, Chamadas, TMA (opcional)
                 </p>
                 {csvError && (
