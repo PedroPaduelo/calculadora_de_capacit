@@ -20,7 +20,7 @@ export const Card: React.FC<CardProps> = ({
   hover = false,
   onClick
 }) => {
-  const baseClasses = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm';
+  const baseClasses = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-sm';
   const hoverClasses = hover ? 'hover:shadow-md transition-shadow duration-200' : '';
   
   const CardWrapper = hover ? motion.div : 'div';

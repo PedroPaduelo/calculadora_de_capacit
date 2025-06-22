@@ -18,7 +18,7 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => {
   const inputClasses = `
-    w-full px-3 py-2 text-sm border rounded-lg transition-colors duration-200
+    w-full px-3 py-2 text-sm border rounded-2xl transition-colors duration-200
     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
     bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
     placeholder-gray-500 dark:placeholder-gray-400

@@ -120,8 +120,8 @@ const Sidebar: React.FC<SidebarProps> = () => {
               exit={{ opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <div className="p-1.5 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-2xl">
+                <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-300" />
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -136,7 +136,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
           
           <button
             onClick={toggleSidebar}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-colors"
           >
             {sidebarCollapsed ? (
               <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -182,9 +182,9 @@ const Sidebar: React.FC<SidebarProps> = () => {
                 onClick={() => !isDisabled && navigate(item.path)}
                 disabled={isDisabled}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-all duration-200
                   ${isActive 
-                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' 
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
                     : isDisabled
                       ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
@@ -194,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
                 whileHover={!isDisabled ? { scale: 1.02 } : {}}
                 whileTap={!isDisabled ? { scale: 0.98 } : {}}
               >
-                <div className={`flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+                <div className={`flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-300' : ''}`}>
                   {getIcon(item.icon)}
                 </div>
                 
@@ -221,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <motion.button
             onClick={() => navigate('/operations')}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
