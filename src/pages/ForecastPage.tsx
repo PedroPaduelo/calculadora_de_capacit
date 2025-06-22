@@ -1147,6 +1147,139 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                 </div>
               </div>
 
+              {/* Análise Avançada de SLA */}
+              <div className="card">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Análise Avançada de SLA
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Simulação em tempo real - Ajuste parâmetros e veja o impacto
+                    </p>
+                  </div>
+                </div>
+
+                {/* Simulador SLA */}
+                <div className="space-y-4">
+                  {/* Parâmetros de Simulação */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        SLA Alvo (%)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="70"
+                          max="95"
+                          step="1"
+                          value={serviceParams.serviceLevel}
+                          onChange={(e) => setServiceParams(prev => ({ ...prev, serviceLevel: Number(e.target.value) }))}
+                          className="flex-1"
+                        />
+                        <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                          {serviceParams.serviceLevel}%
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tempo Alvo (segundos)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="10"
+                          max="60"
+                          step="5"
+                          value={serviceParams.targetAnswerTime}
+                          onChange={(e) => setServiceParams(prev => ({ ...prev, targetAnswerTime: Number(e.target.value) }))}
+                          className="flex-1"
+                        />
+                        <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                          {serviceParams.targetAnswerTime}s
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preview dos Resultados */}
+                  {points.length > 0 && (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Pessoas Necessárias</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {(() => {
+                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                              const totalFTE = calculateTotalFTE(results);
+                              return Math.ceil(totalFTE);
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">SLA Previsto</p>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                            {(() => {
+                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                              const avgSLA = calculateAverageServiceLevel(results);
+                              return formatPercentageValue(avgSLA);
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Custo vs 80% SLA</p>
+                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                            {(() => {
+                              const results80 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 80}, shrinkageConfig);
+                              const resultsCurrent = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                              const fte80 = Math.ceil(calculateTotalFTE(results80));
+                              const fteCurrent = Math.ceil(calculateTotalFTE(resultsCurrent));
+                              const diff = fteCurrent - fte80;
+                              return diff > 0 ? `+${diff}` : diff.toString();
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Pico de Demanda</p>
+                          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                            {(() => {
+                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                              const maxAgents = Math.max(...results.map(r => r.requiredAgentsWithShrinkage));
+                              return maxAgents;
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Explicação do Cálculo */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <details className="group">
+                          <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">
+                            🔍 Como é calculado? (Clique para ver detalhes)
+                          </summary>
+                          <div className="mt-3 text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                            <p><strong>1. Tráfego por Intervalo:</strong> (Chamadas × TMA) ÷ 3600 segundos</p>
+                            <p><strong>2. Fórmula Erlang C:</strong> Calcula probabilidade de espera</p>
+                            <p><strong>3. SLA = 1 - ErlangC × e^(-(agentes-trafego) × tempo_alvo/TMA)</strong></p>
+                            <p><strong>4. Busca Iterativa:</strong> Incrementa agentes até atingir SLA alvo</p>
+                            <p><strong>5. Shrinkage:</strong> Multiplica por fator de ausências/pausas</p>
+                            <p className="text-purple-600 dark:text-purple-400 font-medium">
+                              💡 Dica: SLA mais alto = mais pessoas = maior custo. Encontre o equilíbrio ideal!
+                            </p>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Shrinkage Configuration */}
               <div className="card">
                 <div className="flex items-center gap-3 mb-6">
