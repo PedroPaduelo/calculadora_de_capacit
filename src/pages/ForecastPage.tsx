@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -10,7 +10,6 @@ import {
   Clock,
   BarChart3,
   AlertCircle,
-  FileText,
   Eye,
   Target,
   Users,
@@ -32,20 +31,19 @@ import {
   AreaChart,
   Area 
 } from 'recharts';
-import { Forecast, ForecastPoint, ForecastInterval, Operation, ServiceParameters, ShrinkageConfig } from '../types';
+import { Forecast, ForecastPoint, ForecastInterval, ServiceParameters, ShrinkageConfig } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { validateForecast, generateSampleForecast, calculateIntervalStaffing, calculateTotalFTE, calculateAverageServiceLevel, calculateTotalShrinkage } from '../utils/advancedErlangC';
 import { formatDecimal, formatPercentageValue, formatFTE } from '../utils/formatters';
-import { generateTimeIntervals, createEmptyForecastPoints, fillMissingIntervals, calculateTotalOperationHours } from '../utils/intervalUtils';
+import { generateTimeIntervals, createEmptyForecastPoints, calculateTotalOperationHours } from '../utils/intervalUtils';
 import { LoadingOverlay, useConfirmDialog } from '../components/ui';
 
 const ForecastPage: React.FC = () => {
-  const { state, dispatch, getCurrentOperation, saveForecast, updateForecast, deleteForecast } = useApp();
+  const { state, getCurrentOperation, saveForecast, updateForecast, deleteForecast } = useApp();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingForecast, setEditingForecast] = useState<Forecast | null>(null);
   const [showPreview, setShowPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showConfirm, ConfirmDialog } = useConfirmDialog();
 
   const currentOperation = getCurrentOperation();
@@ -285,7 +283,6 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
   index
 }) => {
   const peakCalls = Math.max(...forecast.points.map(p => p.calls));
-  const avgCalls = Math.round(forecast.totalCalls / forecast.points.length);
 
   // Preparar dados para mini gráfico
   const chartData = forecast.points.slice(0, 24).map(point => ({
@@ -631,7 +628,7 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
       samplePoints = createEmptyForecastPoints(intervals);
       
       // Preencher com dados de exemplo baseados em padrões típicos de call center
-      samplePoints = samplePoints.map((point, index) => {
+      samplePoints = samplePoints.map((point) => {
         const hour = parseInt(point.time.split(':')[0]);
         let calls = 0;
         
