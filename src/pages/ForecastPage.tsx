@@ -1147,7 +1147,7 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Análise Avançada de SLA */}
+              {/* Simulador de Dimensionamento */}
               <div className="card">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
@@ -1155,129 +1155,297 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Análise Avançada de SLA
+                      Simulador de Dimensionamento
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Simulação em tempo real - Ajuste parâmetros e veja o impacto
+                      Configure pessoas ou SLA e veja o impacto em tempo real
                     </p>
                   </div>
                 </div>
 
-                {/* Simulador SLA */}
-                <div className="space-y-4">
-                  {/* Parâmetros de Simulação */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        SLA Alvo (%)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range"
-                          min="70"
-                          max="95"
-                          step="1"
-                          value={serviceParams.serviceLevel}
-                          onChange={(e) => setServiceParams(prev => ({ ...prev, serviceLevel: Number(e.target.value) }))}
-                          className="flex-1"
-                        />
-                        <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                          {serviceParams.serviceLevel}%
-                        </span>
+                {points.length > 0 && (
+                  <div className="space-y-6">
+                    {/* Modo de Configuração */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Modo:</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, optimizationMode: 'sla' }))}
+                          className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                            (formData as any).optimizationMode === 'sla' || !(formData as any).optimizationMode
+                              ? 'bg-purple-600 text-white' 
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                          }`}
+                        >
+                          🎯 Definir SLA → Ver Pessoas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, optimizationMode: 'headcount' }))}
+                          className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                            (formData as any).optimizationMode === 'headcount'
+                              ? 'bg-purple-600 text-white' 
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                          }`}
+                        >
+                          👥 Definir Pessoas → Ver SLA
+                        </button>
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Tempo Alvo (segundos)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range"
-                          min="10"
-                          max="60"
-                          step="5"
-                          value={serviceParams.targetAnswerTime}
-                          onChange={(e) => setServiceParams(prev => ({ ...prev, targetAnswerTime: Number(e.target.value) }))}
-                          className="flex-1"
-                        />
-                        <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                          {serviceParams.targetAnswerTime}s
-                        </span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Preview dos Resultados */}
-                  {points.length > 0 && (
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <div className="grid grid-cols-4 gap-4 text-center">
+                    {/* Controles baseados no modo */}
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Lado Esquerdo - Controles */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white">⚙️ Configuração</h4>
+                        
+                        {/* Tempo Alvo */}
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Pessoas Necessárias</p>
-                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {(() => {
-                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
-                              const totalFTE = calculateTotalFTE(results);
-                              return Math.ceil(totalFTE);
-                            })()}
-                          </p>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tempo Alvo de Atendimento
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range"
+                              min="10"
+                              max="60"
+                              step="5"
+                              value={serviceParams.targetAnswerTime}
+                              onChange={(e) => setServiceParams(prev => ({ ...prev, targetAnswerTime: Number(e.target.value) }))}
+                              className="flex-1"
+                            />
+                            <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded min-w-[50px] text-center">
+                              {serviceParams.targetAnswerTime}s
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">SLA Previsto</p>
-                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                            {(() => {
-                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
-                              const avgSLA = calculateAverageServiceLevel(results);
-                              return formatPercentageValue(avgSLA);
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Custo vs 80% SLA</p>
-                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                            {(() => {
-                              const results80 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 80}, shrinkageConfig);
-                              const resultsCurrent = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
-                              const fte80 = Math.ceil(calculateTotalFTE(results80));
-                              const fteCurrent = Math.ceil(calculateTotalFTE(resultsCurrent));
-                              const diff = fteCurrent - fte80;
-                              return diff > 0 ? `+${diff}` : diff.toString();
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Pico de Demanda</p>
-                          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                            {(() => {
-                              const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
-                              const maxAgents = Math.max(...results.map(r => r.requiredAgentsWithShrinkage));
-                              return maxAgents;
-                            })()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Explicação do Cálculo */}
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <details className="group">
-                          <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">
-                            🔍 Como é calculado? (Clique para ver detalhes)
-                          </summary>
-                          <div className="mt-3 text-xs text-gray-600 dark:text-gray-400 space-y-2">
-                            <p><strong>1. Tráfego por Intervalo:</strong> (Chamadas × TMA) ÷ 3600 segundos</p>
-                            <p><strong>2. Fórmula Erlang C:</strong> Calcula probabilidade de espera</p>
-                            <p><strong>3. SLA = 1 - ErlangC × e^(-(agentes-trafego) × tempo_alvo/TMA)</strong></p>
-                            <p><strong>4. Busca Iterativa:</strong> Incrementa agentes até atingir SLA alvo</p>
-                            <p><strong>5. Shrinkage:</strong> Multiplica por fator de ausências/pausas</p>
-                            <p className="text-purple-600 dark:text-purple-400 font-medium">
-                              💡 Dica: SLA mais alto = mais pessoas = maior custo. Encontre o equilíbrio ideal!
+
+                        {/* Controle Principal baseado no modo */}
+                        {((formData as any).optimizationMode === 'sla' || !(formData as any).optimizationMode) ? (
+                          // Modo: Definir SLA → Ver Pessoas
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              🎯 SLA Alvo (Meta)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="60"
+                                max="98"
+                                step="1"
+                                value={serviceParams.serviceLevel}
+                                onChange={(e) => setServiceParams(prev => ({ ...prev, serviceLevel: Number(e.target.value) }))}
+                                className="flex-1"
+                              />
+                              <span className="text-sm font-mono bg-purple-100 dark:bg-purple-700 px-2 py-1 rounded min-w-[60px] text-center font-semibold">
+                                {serviceParams.serviceLevel}%
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              O sistema calculará quantas pessoas são necessárias
                             </p>
                           </div>
-                        </details>
+                        ) : (
+                          // Modo: Definir Pessoas → Ver SLA  
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              👥 Pessoas Disponíveis (Headcount)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="1"
+                                max="200"
+                                step="1"
+                                value={(formData as any).fixedHeadcount || (() => {
+                                  const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                                  return Math.ceil(calculateTotalFTE(results));
+                                })()}
+                                onChange={(e) => setFormData(prev => ({ ...prev, fixedHeadcount: Number(e.target.value) }))}
+                                className="flex-1"
+                              />
+                              <span className="text-sm font-mono bg-blue-100 dark:bg-blue-700 px-2 py-1 rounded min-w-[60px] text-center font-semibold">
+                                {(formData as any).fixedHeadcount || (() => {
+                                  const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                                  return Math.ceil(calculateTotalFTE(results));
+                                })()}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              O sistema calculará qual SLA é possível atingir
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Lado Direito - Resultados */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white">📊 Resultado</h4>
+                        
+                        {/* Card de Resultado Principal */}
+                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                          {((formData as any).optimizationMode === 'sla' || !(formData as any).optimizationMode) ? (
+                            // Resultado: Pessoas necessárias
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                👥 Pessoas Necessárias para SLA {serviceParams.serviceLevel}%
+                              </p>
+                              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                {(() => {
+                                  const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                                  const totalFTE = calculateTotalFTE(results);
+                                  return Math.ceil(totalFTE);
+                                })()}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                (já inclui shrinkage de {formatPercentageValue(totalShrinkage)})
+                              </p>
+                            </div>
+                          ) : (
+                            // Resultado: SLA possível
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                🎯 SLA Possível com {(formData as any).fixedHeadcount} pessoas
+                              </p>
+                              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                                {(() => {
+                                  // Calcular SLA reverso baseado em pessoas fixas
+                                  const fixedHeadcount = (formData as any).fixedHeadcount;
+                                  if (!fixedHeadcount) return '0%';
+                                  
+                                  // Simular diferentes SLAs até encontrar o que é possível com o headcount fixo
+                                  let bestSLA = 0;
+                                  for (let testSLA = 60; testSLA <= 98; testSLA++) {
+                                    const testResults = calculateIntervalStaffing(
+                                      points, 
+                                      { ...serviceParams, serviceLevel: testSLA }, 
+                                      shrinkageConfig
+                                    );
+                                    const requiredFTE = Math.ceil(calculateTotalFTE(testResults));
+                                    if (requiredFTE <= fixedHeadcount) {
+                                      bestSLA = testSLA;
+                                    } else {
+                                      break;
+                                    }
+                                  }
+                                  return bestSLA + '%';
+                                })()}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                em {serviceParams.targetAnswerTime}s de tempo alvo
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Comparações Rápidas */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded p-2 text-center">
+                            <p className="text-orange-600 dark:text-orange-400 font-semibold">📈 SLA 85%</p>
+                            <p className="text-gray-700 dark:text-gray-300">
+                              {(() => {
+                                const results85 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 85}, shrinkageConfig);
+                                return Math.ceil(calculateTotalFTE(results85));
+                              })()} pessoas
+                            </p>
+                          </div>
+                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded p-2 text-center">
+                            <p className="text-green-600 dark:text-green-400 font-semibold">📊 SLA 80%</p>
+                            <p className="text-gray-700 dark:text-gray-300">
+                              {(() => {
+                                const results80 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 80}, shrinkageConfig);
+                                return Math.ceil(calculateTotalFTE(results80));
+                              })()} pessoas
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Análise de Economia/Custo */}
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                          <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">💡 Análise de Custo</p>
+                          {((formData as any).optimizationMode === 'sla' || !(formData as any).optimizationMode) ? (
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {(() => {
+                                const current = (() => {
+                                  const results = calculateIntervalStaffing(points, serviceParams, shrinkageConfig);
+                                  return Math.ceil(calculateTotalFTE(results));
+                                })();
+                                const baseline = (() => {
+                                  const results80 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 80}, shrinkageConfig);
+                                  return Math.ceil(calculateTotalFTE(results80));
+                                })();
+                                const diff = current - baseline;
+                                const percent = baseline > 0 ? ((diff / baseline) * 100).toFixed(1) : '0';
+                                
+                                if (diff > 0) {
+                                  return `+${diff} pessoas vs SLA 80% (+${percent}% custo)`;
+                                } else if (diff < 0) {
+                                  return `${diff} pessoas vs SLA 80% (${percent}% economia)`;
+                                } else {
+                                  return `Igual ao SLA 80% (mesmo custo)`;
+                                }
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {(() => {
+                                const fixedHeadcount = (formData as any).fixedHeadcount;
+                                const baseline = (() => {
+                                  const results80 = calculateIntervalStaffing(points, {...serviceParams, serviceLevel: 80}, shrinkageConfig);
+                                  return Math.ceil(calculateTotalFTE(results80));
+                                })();
+                                const diff = fixedHeadcount - baseline;
+                                const percent = baseline > 0 ? ((diff / baseline) * 100).toFixed(1) : '0';
+                                
+                                if (diff > 0) {
+                                  return `+${diff} pessoas vs necessário para SLA 80% (+${percent}% orçamento)`;
+                                } else if (diff < 0) {
+                                  return `${Math.abs(diff)} pessoas a menos que SLA 80% (${Math.abs(parseFloat(percent))}% economia)`;
+                                } else {
+                                  return `Exato para SLA 80% (orçamento ideal)`;
+                                }
+                              })()}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Explicação Técnica (collapsible) */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <details className="group">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-2">
+                          🔍 Como funciona o cálculo? (Clique para detalhes técnicos)
+                          <span className="text-xs text-gray-500 dark:text-gray-400 group-open:hidden">↓</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 hidden group-open:inline">↑</span>
+                        </summary>
+                        <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="grid grid-cols-2 gap-4 text-xs text-gray-600 dark:text-gray-400">
+                            <div>
+                              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">📐 Fórmula Erlang C:</p>
+                              <div className="space-y-1 font-mono bg-white dark:bg-gray-800 p-2 rounded text-xs">
+                                <p>1. Tráfego = (Chamadas × TMA) ÷ 3600</p>
+                                <p>2. ErlangC = Prob. de espera</p>
+                                <p>3. SLA = 1 - ErlangC × e^(...)</p>
+                                <p>4. Busca iterativa por agentes</p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">⚡ Processo:</p>
+                              <div className="space-y-1">
+                                <p><strong>Modo SLA→Pessoas:</strong> Incrementa agentes até atingir SLA</p>
+                                <p><strong>Modo Pessoas→SLA:</strong> Testa SLAs possíveis com agentes fixos</p>
+                                <p><strong>Shrinkage:</strong> Multiplica resultado por fator de ausências</p>
+                                <p><strong>Resultado:</strong> FTE total necessário</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Shrinkage Configuration */}
