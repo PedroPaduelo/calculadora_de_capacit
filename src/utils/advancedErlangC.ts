@@ -98,7 +98,7 @@ function findMinimumAgents(
 }
 
 // Função principal para calcular dimensionamento por intervalos
-export function calculateIntervalStaffing(
+export function calculateAdvancedErlangC(
   forecastPoints: ForecastPoint[],
   serviceParameters: ServiceParameters,
   shrinkageConfig: ShrinkageConfig
@@ -249,3 +249,6 @@ export function generateSampleForecast(interval: number = 60): ForecastPoint[] {
   
   return points;
 }
+
+// Alias para manter compatibilidade
+export const calculateIntervalStaffing = calculateAdvancedErlangC;

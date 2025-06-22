@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { Operation, OperationType } from '../types';
 import { useApp } from '../contexts/AppContext';
+import { LoadingOverlay } from '../components/ui';
 
 const OperationsPage: React.FC = () => {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, saveOperation, updateOperation, deleteOperation } = useApp();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingOperation, setEditingOperation] = useState<Operation | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateOperation = () => {
     setEditingOperation(null);
@@ -28,9 +30,17 @@ const OperationsPage: React.FC = () => {
     setShowCreateForm(true);
   };
 
-  const handleDeleteOperation = (operationId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta operação? Todos os forecasts e cenários relacionados serão perdidos.')) {
-      dispatch({ type: 'DELETE_OPERATION', payload: operationId });
+  const handleDeleteOperation = async (operationId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta operação? Todos os forecasts relacionados serão perdidos.')) {
+      setIsLoading(true);
+      try {
+        await deleteOperation(operationId);
+      } catch (error) {
+        console.error('Error deleting operation:', error);
+        alert('Erro ao excluir operação. Tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -39,7 +49,8 @@ const OperationsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <LoadingOverlay isLoading={isLoading} message="Salvando operação...">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -108,19 +119,28 @@ const OperationsPage: React.FC = () => {
         <OperationFormModal
           operation={editingOperation}
           onClose={() => setShowCreateForm(false)}
-          onSave={(operation) => {
-            if (editingOperation) {
-              dispatch({ type: 'UPDATE_OPERATION', payload: operation });
-            } else {
-              dispatch({ type: 'ADD_OPERATION', payload: operation });
-              // Auto-select new operation
-              dispatch({ type: 'SET_CURRENT_OPERATION', payload: operation.id });
+          onSave={async (operation) => {
+            setIsLoading(true);
+            try {
+              if (editingOperation) {
+                await updateOperation(operation);
+              } else {
+                await saveOperation(operation);
+                // Auto-select new operation
+                dispatch({ type: 'SET_CURRENT_OPERATION', payload: operation.id });
+              }
+              setShowCreateForm(false);
+            } catch (error) {
+              console.error('Error saving operation:', error);
+              alert('Erro ao salvar operação. Tente novamente.');
+            } finally {
+              setIsLoading(false);
             }
-            setShowCreateForm(false);
           }}
         />
       )}
-    </div>
+      </div>
+    </LoadingOverlay>
   );
 };
 

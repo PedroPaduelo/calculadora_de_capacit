@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import OperationsPage from './pages/OperationsPage';
 import ForecastPage from './pages/ForecastPage';
 import ResultsPage from './pages/ResultsPage';
+import ScenariosPage from './pages/ScenariosPage';
 import { PageType } from './types';
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
       case PageType.RESULTS:
         return <ResultsPage />;
       case PageType.SCENARIOS:
-        return <div className="p-8">Scenarios Page - Em desenvolvimento</div>;
+        return <ScenariosPage />;
       default:
         return <OperationsPage />;
     }

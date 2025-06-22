@@ -8,6 +8,7 @@ interface CardProps {
   subtitle?: string;
   action?: React.ReactNode;
   hover?: boolean;
+  onClick?: () => void;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -16,9 +17,10 @@ export const Card: React.FC<CardProps> = ({
   title,
   subtitle,
   action,
-  hover = false
+  hover = false,
+  onClick
 }) => {
-  const baseClasses = 'bg-white border border-gray-200 rounded-xl shadow-sm';
+  const baseClasses = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm';
   const hoverClasses = hover ? 'hover:shadow-md transition-shadow duration-200' : '';
   
   const CardWrapper = hover ? motion.div : 'div';
@@ -26,20 +28,21 @@ export const Card: React.FC<CardProps> = ({
   return (
     <CardWrapper
       className={`${baseClasses} ${hoverClasses} ${className}`}
+      onClick={onClick}
       {...(hover && {
         whileHover: { y: -2 },
         transition: { duration: 0.2 }
       })}
     >
       {(title || subtitle || action) && (
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               {title && (
-                <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
               )}
               {subtitle && (
-                <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
               )}
             </div>
             {action && (

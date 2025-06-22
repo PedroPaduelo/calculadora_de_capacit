@@ -36,12 +36,14 @@ import { Forecast, ForecastPoint, ForecastInterval, Operation, ServiceParameters
 import { useApp } from '../contexts/AppContext';
 import { validateForecast, generateSampleForecast, calculateIntervalStaffing, calculateTotalFTE, calculateAverageServiceLevel, calculateTotalShrinkage } from '../utils/advancedErlangC';
 import { generateTimeIntervals, createEmptyForecastPoints, fillMissingIntervals, calculateTotalOperationHours } from '../utils/intervalUtils';
+import { LoadingOverlay } from '../components/ui';
 
 const ForecastPage: React.FC = () => {
-  const { state, dispatch, getCurrentOperation } = useApp();
+  const { state, dispatch, getCurrentOperation, saveForecast, updateForecast, deleteForecast } = useApp();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingForecast, setEditingForecast] = useState<Forecast | null>(null);
   const [showPreview, setShowPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentOperation = getCurrentOperation();
@@ -60,13 +62,21 @@ const ForecastPage: React.FC = () => {
     setShowCreateForm(true);
   };
 
-  const handleDeleteForecast = (forecastId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este forecast? Todos os cenários relacionados serão perdidos.')) {
-      dispatch({ type: 'DELETE_FORECAST', payload: forecastId });
+  const handleDeleteForecast = async (forecastId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este forecast?')) {
+      setIsLoading(true);
+      try {
+        await deleteForecast(forecastId);
+      } catch (error) {
+        console.error('Error deleting forecast:', error);
+        alert('Erro ao excluir forecast. Tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleDuplicateForecast = (forecast: Forecast) => {
+  const handleDuplicateForecast = async (forecast: Forecast) => {
     const newForecast: Forecast = {
       ...forecast,
       id: `forecast_${Date.now()}`,
@@ -74,7 +84,16 @@ const ForecastPage: React.FC = () => {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    dispatch({ type: 'ADD_FORECAST', payload: newForecast });
+    
+    setIsLoading(true);
+    try {
+      await saveForecast(newForecast);
+    } catch (error) {
+      console.error('Error duplicating forecast:', error);
+      alert('Erro ao duplicar forecast. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const exportForecastCSV = (forecast: Forecast) => {
@@ -110,7 +129,8 @@ const ForecastPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <LoadingOverlay isLoading={isLoading} message="Processando forecast...">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -182,13 +202,21 @@ const ForecastPage: React.FC = () => {
           operation={currentOperation}
           forecast={editingForecast}
           onClose={() => setShowCreateForm(false)}
-          onSave={(forecast) => {
-            if (editingForecast) {
-              dispatch({ type: 'UPDATE_FORECAST', payload: forecast });
-            } else {
-              dispatch({ type: 'ADD_FORECAST', payload: forecast });
+          onSave={async (forecast) => {
+            setIsLoading(true);
+            try {
+              if (editingForecast) {
+                await updateForecast(forecast);
+              } else {
+                await saveForecast(forecast);
+              }
+              setShowCreateForm(false);
+            } catch (error) {
+              console.error('Error saving forecast:', error);
+              alert('Erro ao salvar forecast. Tente novamente.');
+            } finally {
+              setIsLoading(false);
             }
-            setShowCreateForm(false);
           }}
         />
       )}
@@ -200,7 +228,8 @@ const ForecastPage: React.FC = () => {
           onClose={() => setShowPreview(null)}
         />
       )}
-    </div>
+      </div>
+    </LoadingOverlay>
   );
 };
 

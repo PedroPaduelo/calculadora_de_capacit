@@ -6,6 +6,7 @@ import {
   Scenario, 
   PageType
 } from '../types';
+import { dbManager } from '../utils/indexedDB';
 
 // Ações do reducer
 type AppAction = 
@@ -158,6 +159,17 @@ interface AppContextType {
   getCurrentScenario: () => Scenario | undefined;
   getOperationForecasts: (operationId: string) => Forecast[];
   getOperationScenarios: (operationId: string) => Scenario[];
+  // Enhanced actions with IndexedDB persistence
+  saveOperation: (operation: Operation) => Promise<void>;
+  updateOperation: (operation: Operation) => Promise<void>;
+  deleteOperation: (operationId: string) => Promise<void>;
+  saveForecast: (forecast: Forecast) => Promise<void>;
+  updateForecast: (forecast: Forecast) => Promise<void>;
+  deleteForecast: (forecastId: string) => Promise<void>;
+  saveScenario: (scenario: Scenario) => Promise<void>;
+  updateScenario: (scenario: Scenario) => Promise<void>;
+  deleteScenario: (scenarioId: string) => Promise<void>;
+  duplicateScenario: (scenarioId: string) => Promise<Scenario>;
 }
 
 // Context
@@ -181,42 +193,53 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Carregar estado do localStorage na inicialização
+  // Carregar dados do IndexedDB na inicialização
   useEffect(() => {
-    const savedState = localStorage.getItem('calculadora-call-center-state');
-    if (savedState) {
+    const loadDataFromDB = async () => {
       try {
-        const parsedState = JSON.parse(savedState);
-        // Converter strings de data de volta para Date objects
-        const processedState = {
-          ...parsedState,
-          operations: parsedState.operations?.map((op: any) => ({
-            ...op,
-            createdAt: new Date(op.createdAt),
-            updatedAt: new Date(op.updatedAt)
-          })) || [],
-          forecasts: parsedState.forecasts?.map((f: any) => ({
-            ...f,
-            createdAt: new Date(f.createdAt),
-            updatedAt: new Date(f.updatedAt)
-          })) || [],
-          scenarios: parsedState.scenarios?.map((s: any) => ({
-            ...s,
-            createdAt: new Date(s.createdAt),
-            updatedAt: new Date(s.updatedAt)
-          })) || []
-        };
-        dispatch({ type: 'LOAD_STATE', payload: processedState });
+        await dbManager.initDB(); // Garantir que o DB está inicializado
+        
+        const [operations, forecasts, scenarios] = await Promise.all([
+          dbManager.getOperations(),
+          dbManager.getForecasts(),
+          dbManager.getScenarios()
+        ]);
+
+        // Carregar configurações do localStorage (mais leves)
+        const savedConfig = localStorage.getItem('calculadora-call-center-config');
+        let config = initialState.config;
+        
+        if (savedConfig) {
+          try {
+            config = { ...config, ...JSON.parse(savedConfig) };
+          } catch (error) {
+            console.error('Error loading config from localStorage:', error);
+          }
+        }
+
+        dispatch({ 
+          type: 'LOAD_STATE', 
+          payload: { 
+            operations, 
+            forecasts, 
+            scenarios,
+            config 
+          } 
+        });
+
+        console.log(`Loaded ${operations.length} operations, ${forecasts.length} forecasts, and ${scenarios.length} scenarios from IndexedDB`);
       } catch (error) {
-        console.error('Error loading state from localStorage:', error);
+        console.error('Error loading data from IndexedDB:', error);
       }
-    }
+    };
+
+    loadDataFromDB();
   }, []);
 
-  // Salvar estado no localStorage sempre que mudar
+  // Salvar apenas configurações no localStorage (mais leve)
   useEffect(() => {
-    localStorage.setItem('calculadora-call-center-state', JSON.stringify(state));
-  }, [state]);
+    localStorage.setItem('calculadora-call-center-config', JSON.stringify(state.config));
+  }, [state.config]);
 
   // Helper functions
   const getCurrentOperation = () => {
@@ -237,13 +260,147 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return state.scenarios.filter(s => s.operationId === operationId);
   };
 
+  // Enhanced actions with IndexedDB persistence
+  const saveOperation = async (operation: Operation) => {
+    try {
+      await dbManager.saveOperation(operation);
+      dispatch({ type: 'ADD_OPERATION', payload: operation });
+      console.log('Operation saved successfully:', operation.name);
+    } catch (error) {
+      console.error('Error saving operation:', error);
+      throw error;
+    }
+  };
+
+  const updateOperation = async (operation: Operation) => {
+    try {
+      await dbManager.saveOperation(operation); // IndexedDB put() update or create
+      dispatch({ type: 'UPDATE_OPERATION', payload: operation });
+      console.log('Operation updated successfully:', operation.name);
+    } catch (error) {
+      console.error('Error updating operation:', error);
+      throw error;
+    }
+  };
+
+  const deleteOperation = async (operationId: string) => {
+    try {
+      await dbManager.deleteOperation(operationId);
+      await dbManager.deleteForecastsByOperation(operationId); // Delete related forecasts
+      dispatch({ type: 'DELETE_OPERATION', payload: operationId });
+      console.log('Operation deleted successfully:', operationId);
+    } catch (error) {
+      console.error('Error deleting operation:', error);
+      throw error;
+    }
+  };
+
+  const saveForecast = async (forecast: Forecast) => {
+    try {
+      await dbManager.saveForecast(forecast);
+      dispatch({ type: 'ADD_FORECAST', payload: forecast });
+      console.log('Forecast saved successfully:', forecast.name);
+    } catch (error) {
+      console.error('Error saving forecast:', error);
+      throw error;
+    }
+  };
+
+  const updateForecast = async (forecast: Forecast) => {
+    try {
+      await dbManager.saveForecast(forecast); // IndexedDB put() update or create
+      dispatch({ type: 'UPDATE_FORECAST', payload: forecast });
+      console.log('Forecast updated successfully:', forecast.name);
+    } catch (error) {
+      console.error('Error updating forecast:', error);
+      throw error;
+    }
+  };
+
+  const deleteForecast = async (forecastId: string) => {
+    try {
+      await dbManager.deleteForecast(forecastId);
+      dispatch({ type: 'DELETE_FORECAST', payload: forecastId });
+      console.log('Forecast deleted successfully:', forecastId);
+    } catch (error) {
+      console.error('Error deleting forecast:', error);
+      throw error;
+    }
+  };
+
+  const saveScenario = async (scenario: Scenario) => {
+    try {
+      await dbManager.saveScenario(scenario);
+      dispatch({ type: 'ADD_SCENARIO', payload: scenario });
+      console.log('Scenario saved successfully:', scenario.name);
+    } catch (error) {
+      console.error('Error saving scenario:', error);
+      throw error;
+    }
+  };
+
+  const updateScenario = async (scenario: Scenario) => {
+    try {
+      await dbManager.saveScenario(scenario);
+      dispatch({ type: 'UPDATE_SCENARIO', payload: scenario });
+      console.log('Scenario updated successfully:', scenario.name);
+    } catch (error) {
+      console.error('Error updating scenario:', error);
+      throw error;
+    }
+  };
+
+  const deleteScenario = async (scenarioId: string) => {
+    try {
+      await dbManager.deleteScenario(scenarioId);
+      dispatch({ type: 'DELETE_SCENARIO', payload: scenarioId });
+      console.log('Scenario deleted successfully:', scenarioId);
+    } catch (error) {
+      console.error('Error deleting scenario:', error);
+      throw error;
+    }
+  };
+
+  const duplicateScenario = async (scenarioId: string): Promise<Scenario> => {
+    try {
+      const originalScenario = state.scenarios.find(s => s.id === scenarioId);
+      if (!originalScenario) {
+        throw new Error('Scenario not found');
+      }
+
+      const duplicatedScenario: Scenario = {
+        ...originalScenario,
+        id: `scenario_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: `${originalScenario.name} (Cópia)`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await saveScenario(duplicatedScenario);
+      return duplicatedScenario;
+    } catch (error) {
+      console.error('Error duplicating scenario:', error);
+      throw error;
+    }
+  };
+
   const contextValue: AppContextType = {
     state,
     dispatch,
     getCurrentOperation,
     getCurrentScenario,
     getOperationForecasts,
-    getOperationScenarios
+    getOperationScenarios,
+    saveOperation,
+    updateOperation,
+    deleteOperation,
+    saveForecast,
+    updateForecast,
+    deleteForecast,
+    saveScenario,
+    updateScenario,
+    deleteScenario,
+    duplicateScenario
   };
 
   return (
