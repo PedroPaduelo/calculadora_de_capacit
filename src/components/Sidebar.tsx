@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, 
   TrendingUp, 
@@ -7,54 +8,82 @@ import {
   GitCompare,
   ChevronLeft,
   ChevronRight,
-  Plus
+  Plus,
+  Home
 } from 'lucide-react';
-import { PageType, NavigationItem } from '../types';
 import { useApp } from '../contexts/AppContext';
 
-interface SidebarProps {
-  currentPage: PageType;
-  onPageChange: (page: PageType) => void;
-}
+interface SidebarProps {}
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
+const Sidebar: React.FC<SidebarProps> = () => {
   const { state, dispatch, getCurrentOperation } = useApp();
   const { sidebarCollapsed } = state.config;
   const currentOperation = getCurrentOperation();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  interface NavigationItem {
+    id: string;
+    label: string;
+    icon: string;
+    description?: string;
+    disabled?: boolean;
+    path: string;
+  }
 
   const navigationItems: NavigationItem[] = [
     {
-      id: PageType.OPERATIONS,
-      label: 'Operações',
-      icon: 'Building2',
-      description: 'Configurar operações'
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'Home',
+      description: 'Visão geral',
+      path: '/'
     },
     {
-      id: PageType.FORECAST,
+      id: 'operations-list',
+      label: 'Lista Operações',
+      icon: 'Building2',
+      description: 'Ver todas operações',
+      path: '/operations-list'
+    },
+    {
+      id: 'operations',
+      label: 'Gerenciar',
+      icon: 'Plus',
+      description: 'Criar/Editar operações',
+      path: '/operations'
+    },
+    {
+      id: 'forecast',
       label: 'Forecast',
       icon: 'TrendingUp',
       description: 'Curva e parâmetros',
-      disabled: !currentOperation
+      disabled: !currentOperation,
+      path: '/forecast'
     },
     {
-      id: PageType.RESULTS,
+      id: 'results',
       label: 'Resultados',
       icon: 'BarChart3',
       description: 'Dimensionamento',
-      disabled: !currentOperation
+      disabled: !currentOperation,
+      path: '/results'
     },
     {
-      id: PageType.SCENARIOS,
+      id: 'scenarios',
       label: 'Cenários',
       icon: 'GitCompare',
       description: 'Comparar cenários',
-      disabled: !currentOperation
+      disabled: !currentOperation,
+      path: '/scenarios'
     }
   ];
 
   const getIcon = (iconName: string) => {
     const icons = {
+      Home: Home,
       Building2,
+      Plus,
       TrendingUp,
       BarChart3,
       GitCompare
@@ -137,13 +166,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           {navigationItems.map((item) => {
-            const isActive = currentPage === item.id;
+            const isActive = location.pathname === item.path;
             const isDisabled = item.disabled;
 
             return (
               <motion.button
                 key={item.id}
-                onClick={() => !isDisabled && onPageChange(item.id)}
+                onClick={() => !isDisabled && navigate(item.path)}
                 disabled={isDisabled}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
@@ -184,7 +213,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
       {!sidebarCollapsed && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <motion.button
-            onClick={() => onPageChange(PageType.OPERATIONS)}
+            onClick={() => navigate('/operations')}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
