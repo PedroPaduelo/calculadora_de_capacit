@@ -8,6 +8,7 @@ import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { calculateAdvancedErlangC } from '../utils/advancedErlangC';
 import ScenarioComparison from '../components/ScenarioComparison';
+import { formatFTE, formatPercentageValue, formatInteger, formatTime } from '../utils/formatters';
 
 interface ScenarioFormData {
   name: string;
@@ -473,13 +474,13 @@ export const ScenariosPage: React.FC = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {Math.ceil(scenario.totalFTE)}
+                        {scenario.totalFTE ? formatInteger(scenario.totalFTE) : 'N/A'}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">FTE Total</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        {scenario.averageServiceLevel.toFixed(1)}%
+                        {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">SLA Médio</div>
                     </div>
@@ -491,7 +492,7 @@ export const ScenariosPage: React.FC = () => {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
-                        {totalShrinkage.toFixed(1)}%
+                        {formatPercentageValue(totalShrinkage)}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Shrinkage</div>
                     </div>
@@ -516,9 +517,9 @@ export const ScenariosPage: React.FC = () => {
                             <div>{result.requiredAgents}</div>
                             <div className="font-semibold">{result.requiredAgentsWithShrinkage}</div>
                             <div className={result.serviceLevel >= scenario.serviceParameters.serviceLevel ? 'text-green-600' : 'text-red-600'}>
-                              {result.serviceLevel.toFixed(1)}%
+                              {formatPercentageValue(result.serviceLevel)}
                             </div>
-                            <div>{result.averageWaitTime.toFixed(1)}</div>
+                            <div>{formatTime(result.averageWaitTime)}</div>
                           </div>
                         ))}
                       </div>

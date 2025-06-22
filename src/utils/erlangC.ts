@@ -1,3 +1,5 @@
+import { roundToDecimals } from './formatters';
+
 export interface CallCenterParams {
   callsPerHour: number;
   averageHandleTime: number; // em segundos
@@ -109,13 +111,13 @@ export function calculateCallCenterStaffing(params: CallCenterParams): CallCente
 
   return {
     agentsRequired,
-    traffic: Math.round(traffic * 100) / 100,
-    probabilityOfWaiting: Math.round(finalProbWaiting * 10000) / 100,
-    averageWaitTime: Math.round(finalAvgWaitTime * 100) / 100,
-    actualServiceLevel: Math.round(finalServiceLevel * 100) / 100,
-    utilizationRate: Math.round(utilizationRate * 100) / 100,
+    traffic: roundToDecimals(traffic, 2),
+    probabilityOfWaiting: roundToDecimals(finalProbWaiting, 2),
+    averageWaitTime: roundToDecimals(finalAvgWaitTime, 2),
+    actualServiceLevel: roundToDecimals(finalServiceLevel, 2),
+    utilizationRate: roundToDecimals(utilizationRate, 2),
     agentsSuggested,
-    serviceLevels: serviceLevels.map(sl => Math.round(sl * 100) / 100)
+    serviceLevels: serviceLevels.map(sl => roundToDecimals(sl, 2))
   };
 }
 

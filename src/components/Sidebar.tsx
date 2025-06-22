@@ -76,6 +76,13 @@ const Sidebar: React.FC<SidebarProps> = () => {
       description: 'Comparar cenários',
       disabled: !currentOperation,
       path: '/scenarios'
+    },
+    {
+      id: 'advanced-scenarios',
+      label: 'Cenários Avançados',
+      icon: 'Zap',
+      description: 'Análise multivariável',
+      path: '/advanced-scenarios'
     }
   ];
 

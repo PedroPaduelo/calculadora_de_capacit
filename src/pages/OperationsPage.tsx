@@ -8,14 +8,15 @@ import {
   Trash2,
   Calendar,
   Globe,
-  Info
+  Info,
+  Copy
 } from 'lucide-react';
 import { Operation, OperationType } from '../types';
 import { useApp } from '../contexts/AppContext';
-import { LoadingOverlay } from '../components/ui';
+import { LoadingOverlay, useConfirmDialog } from '../components/ui';
 
 const OperationsPage: React.FC = () => {
-  const { state, dispatch, saveOperation, updateOperation, deleteOperation } = useApp();
+  const { state, dispatch, saveOperation, updateOperation, deleteOperation, duplicateOperation } = useApp();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingOperation, setEditingOperation] = useState<Operation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +47,21 @@ const OperationsPage: React.FC = () => {
 
   const handleSelectOperation = (operationId: string) => {
     dispatch({ type: 'SET_CURRENT_OPERATION', payload: operationId });
+  };
+
+  const handleDuplicateOperation = async (operation: Operation) => {
+    if (window.confirm(`Tem certeza que deseja duplicar a operação "${operation.name}"? Todos os forecasts e cenários relacionados também serão duplicados.`)) {
+      setIsLoading(true);
+      try {
+        const duplicatedOperation = await duplicateOperation(operation.id);
+        alert(`Operação duplicada com sucesso! Nova operação: "${duplicatedOperation.name}"`);
+      } catch (error) {
+        console.error('Error duplicating operation:', error);
+        alert('Erro ao duplicar operação. Tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   return (
@@ -108,6 +124,7 @@ const OperationsPage: React.FC = () => {
               onSelect={() => handleSelectOperation(operation.id)}
               onEdit={() => handleEditOperation(operation)}
               onDelete={() => handleDeleteOperation(operation.id)}
+              onDuplicate={() => handleDuplicateOperation(operation)}
               index={index}
             />
           ))}
@@ -151,6 +168,7 @@ interface OperationCardProps {
   onSelect: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   index: number;
 }
 
@@ -160,6 +178,7 @@ const OperationCard: React.FC<OperationCardProps> = ({
   onSelect,
   onEdit,
   onDelete,
+  onDuplicate,
   index
 }) => {
   const { getOperationForecasts, getOperationScenarios } = useApp();
@@ -223,8 +242,22 @@ const OperationCard: React.FC<OperationCardProps> = ({
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            title="Editar"
           >
             <Edit3 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          </motion.button>
+          
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate();
+            }}
+            className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Duplicar"
+          >
+            <Copy className="w-4 h-4 text-blue-500 dark:text-blue-400" />
           </motion.button>
           
           <motion.button
@@ -235,6 +268,7 @@ const OperationCard: React.FC<OperationCardProps> = ({
             className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            title="Excluir"
           >
             <Trash2 className="w-4 h-4 text-red-500" />
           </motion.button>
@@ -260,7 +294,7 @@ const OperationCard: React.FC<OperationCardProps> = ({
         
         <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
           <Calendar className="w-3 h-3" />
-          {operation.createdAt.toLocaleDateString('pt-BR')}
+          {new Date(operation.createdAt).toLocaleDateString('pt-BR')}
         </div>
       </div>
 

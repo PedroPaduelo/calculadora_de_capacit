@@ -6,7 +6,7 @@ import {
   Scenario, 
   PageType
 } from '../types';
-import { dbManager } from '../utils/indexedDB';
+import { db } from '../services/database';
 
 // Ações do reducer
 type AppAction = 
@@ -170,6 +170,7 @@ interface AppContextType {
   updateScenario: (scenario: Scenario) => Promise<void>;
   deleteScenario: (scenarioId: string) => Promise<void>;
   duplicateScenario: (scenarioId: string) => Promise<Scenario>;
+  duplicateOperation: (operationId: string) => Promise<Operation>;
 }
 
 // Context
@@ -197,12 +198,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadDataFromDB = async () => {
       try {
-        await dbManager.initDB(); // Garantir que o DB está inicializado
-        
         const [operations, forecasts, scenarios] = await Promise.all([
-          dbManager.getOperations(),
-          dbManager.getForecasts(),
-          dbManager.getScenarios()
+          db.operations.toArray(),
+          db.forecasts.toArray(),
+          db.scenarios.toArray()
         ]);
 
         // Carregar configurações do localStorage (mais leves)
@@ -263,7 +262,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Enhanced actions with IndexedDB persistence
   const saveOperation = async (operation: Operation) => {
     try {
-      await dbManager.saveOperation(operation);
+      await db.operations.put(operation);
       dispatch({ type: 'ADD_OPERATION', payload: operation });
       console.log('Operation saved successfully:', operation.name);
     } catch (error) {
@@ -274,7 +273,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const updateOperation = async (operation: Operation) => {
     try {
-      await dbManager.saveOperation(operation); // IndexedDB put() update or create
+      await db.operations.put(operation); // IndexedDB put() update or create
       dispatch({ type: 'UPDATE_OPERATION', payload: operation });
       console.log('Operation updated successfully:', operation.name);
     } catch (error) {
@@ -285,8 +284,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const deleteOperation = async (operationId: string) => {
     try {
-      await dbManager.deleteOperation(operationId);
-      await dbManager.deleteForecastsByOperation(operationId); // Delete related forecasts
+      await db.operations.delete(operationId);
+      // Delete related forecasts
+      await db.forecasts.where('operationId').equals(operationId).delete();
       dispatch({ type: 'DELETE_OPERATION', payload: operationId });
       console.log('Operation deleted successfully:', operationId);
     } catch (error) {
@@ -297,7 +297,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const saveForecast = async (forecast: Forecast) => {
     try {
-      await dbManager.saveForecast(forecast);
+      await db.forecasts.put(forecast);
       dispatch({ type: 'ADD_FORECAST', payload: forecast });
       console.log('Forecast saved successfully:', forecast.name);
     } catch (error) {
@@ -308,7 +308,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const updateForecast = async (forecast: Forecast) => {
     try {
-      await dbManager.saveForecast(forecast); // IndexedDB put() update or create
+      await db.forecasts.put(forecast); // IndexedDB put() update or create
       dispatch({ type: 'UPDATE_FORECAST', payload: forecast });
       console.log('Forecast updated successfully:', forecast.name);
     } catch (error) {
@@ -319,7 +319,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const deleteForecast = async (forecastId: string) => {
     try {
-      await dbManager.deleteForecast(forecastId);
+      await db.forecasts.delete(forecastId);
       dispatch({ type: 'DELETE_FORECAST', payload: forecastId });
       console.log('Forecast deleted successfully:', forecastId);
     } catch (error) {
@@ -330,7 +330,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const saveScenario = async (scenario: Scenario) => {
     try {
-      await dbManager.saveScenario(scenario);
+      await db.scenarios.put(scenario);
       dispatch({ type: 'ADD_SCENARIO', payload: scenario });
       console.log('Scenario saved successfully:', scenario.name);
     } catch (error) {
@@ -341,7 +341,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const updateScenario = async (scenario: Scenario) => {
     try {
-      await dbManager.saveScenario(scenario);
+      await db.scenarios.put(scenario);
       dispatch({ type: 'UPDATE_SCENARIO', payload: scenario });
       console.log('Scenario updated successfully:', scenario.name);
     } catch (error) {
@@ -352,7 +352,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const deleteScenario = async (scenarioId: string) => {
     try {
-      await dbManager.deleteScenario(scenarioId);
+      await db.scenarios.delete(scenarioId);
       dispatch({ type: 'DELETE_SCENARIO', payload: scenarioId });
       console.log('Scenario deleted successfully:', scenarioId);
     } catch (error) {
@@ -384,6 +384,80 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  const duplicateOperation = async (operationId: string): Promise<Operation> => {
+    try {
+      const originalOperation = state.operations.find(op => op.id === operationId);
+      if (!originalOperation) {
+        throw new Error('Operation not found');
+      }
+
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substr(2, 9);
+      
+      // Create duplicated operation
+      const duplicatedOperation: Operation = {
+        ...originalOperation,
+        id: `operation_${timestamp}_${randomSuffix}`,
+        name: `${originalOperation.name} (Cópia)`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Save the duplicated operation first
+      await saveOperation(duplicatedOperation);
+
+      // Get all forecasts for the original operation
+      const originalForecasts = state.forecasts.filter(f => f.operationId === operationId);
+      
+      // Duplicate each forecast and its related scenarios
+      for (const originalForecast of originalForecasts) {
+        const forecastTimestamp = Date.now() + Math.random() * 1000; // Ensure unique timestamps
+        const forecastSuffix = Math.random().toString(36).substr(2, 9);
+        
+        const duplicatedForecast: Forecast = {
+          ...originalForecast,
+          id: `forecast_${forecastTimestamp}_${forecastSuffix}`,
+          name: `${originalForecast.name} (Cópia)`,
+          operationId: duplicatedOperation.id,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        await saveForecast(duplicatedForecast);
+
+        // Get all scenarios for this forecast
+        const originalScenarios = state.scenarios.filter(s => s.forecastId === originalForecast.id);
+        
+        // Duplicate each scenario
+        for (const originalScenario of originalScenarios) {
+          const scenarioTimestamp = Date.now() + Math.random() * 1000; // Ensure unique timestamps
+          const scenarioSuffix = Math.random().toString(36).substr(2, 9);
+          
+          const duplicatedScenario: Scenario = {
+            ...originalScenario,
+            id: `scenario_${scenarioTimestamp}_${scenarioSuffix}`,
+            name: `${originalScenario.name} (Cópia)`,
+            operationId: duplicatedOperation.id,
+            forecastId: duplicatedForecast.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          await saveScenario(duplicatedScenario);
+        }
+      }
+
+      console.log(`Operation duplicated successfully: ${duplicatedOperation.name}`);
+      console.log(`- Duplicated ${originalForecasts.length} forecasts`);
+      console.log(`- Duplicated ${state.scenarios.filter(s => s.operationId === operationId).length} scenarios`);
+      
+      return duplicatedOperation;
+    } catch (error) {
+      console.error('Error duplicating operation:', error);
+      throw error;
+    }
+  };
+
   const contextValue: AppContextType = {
     state,
     dispatch,
@@ -400,7 +474,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     saveScenario,
     updateScenario,
     deleteScenario,
-    duplicateScenario
+    duplicateScenario,
+    duplicateOperation
   };
 
   return (

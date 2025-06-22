@@ -35,6 +35,7 @@ import {
 import { Forecast, ForecastPoint, ForecastInterval, Operation, ServiceParameters, ShrinkageConfig } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { validateForecast, generateSampleForecast, calculateIntervalStaffing, calculateTotalFTE, calculateAverageServiceLevel, calculateTotalShrinkage } from '../utils/advancedErlangC';
+import { formatDecimal, formatPercentageValue, formatFTE } from '../utils/formatters';
 import { generateTimeIntervals, createEmptyForecastPoints, fillMissingIntervals, calculateTotalOperationHours } from '../utils/intervalUtils';
 import { LoadingOverlay } from '../components/ui';
 
@@ -368,7 +369,7 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
           <div className="text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">FTE Total</p>
             <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-              {forecast.totalFTE}
+              {formatFTE(forecast.totalFTE)}
             </p>
           </div>
         )}
@@ -376,7 +377,7 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
           <div className="text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">SLA Médio</p>
             <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-              {forecast.averageServiceLevel}%
+              {formatPercentageValue(forecast.averageServiceLevel)}
             </p>
           </div>
         )}
@@ -407,7 +408,7 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
       <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>TMA: {forecast.averageAht}s</span>
-          <span>{forecast.createdAt.toLocaleDateString('pt-BR')}</span>
+          <span>{new Date(forecast.createdAt).toLocaleDateString('pt-BR')}</span>
         </div>
       </div>
     </motion.div>
@@ -1204,7 +1205,7 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                           ? 'text-orange-600 dark:text-orange-400' 
                           : 'text-green-600 dark:text-green-400'
                       }`}>
-                        {totalShrinkage.toFixed(1)}%
+                        {formatPercentageValue(totalShrinkage)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -1212,7 +1213,7 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                         Multiplicador
                       </p>
                       <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                        {(1 / (1 - totalShrinkage / 100)).toFixed(2)}x
+                        {formatDecimal(1 / (1 - totalShrinkage / 100))}x
                       </p>
                     </div>
                   </div>

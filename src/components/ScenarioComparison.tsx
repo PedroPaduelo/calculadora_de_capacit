@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Scenario } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
+import { formatFTE, formatPercentageValue, formatInteger, formatTime } from '../utils/formatters';
 
 interface ScenarioComparisonProps {
   scenarios: Scenario[];
@@ -91,7 +92,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                         {scenario.name}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        FTE: {Math.ceil(scenario.totalFTE)} | SLA: {scenario.averageServiceLevel.toFixed(1)}%
+                        FTE: {scenario.totalFTE ? formatInteger(scenario.totalFTE) : 'N/A'} | SLA: {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}
                       </p>
                     </div>
                     <div className={`w-4 h-4 rounded-full border-2 ${
@@ -132,7 +133,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                       </td>
                       {selectedScenarioObjects.map(scenario => (
                         <td key={scenario.id} className="border border-gray-300 dark:border-gray-600 p-3 text-center text-gray-900 dark:text-gray-100">
-                          {Math.ceil(scenario.totalFTE)}
+                          {scenario.totalFTE ? formatInteger(scenario.totalFTE) : 'N/A'}
                         </td>
                       ))}
                     </tr>
@@ -142,7 +143,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                       </td>
                       {selectedScenarioObjects.map(scenario => (
                         <td key={scenario.id} className="border border-gray-300 dark:border-gray-600 p-3 text-center text-gray-900 dark:text-gray-100">
-                          {scenario.averageServiceLevel.toFixed(1)}%
+                          {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}
                         </td>
                       ))}
                     </tr>
@@ -172,7 +173,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                       </td>
                       {selectedScenarioObjects.map(scenario => (
                         <td key={scenario.id} className="border border-gray-300 dark:border-gray-600 p-3 text-center text-gray-900 dark:text-gray-100">
-                          {getTotalShrinkage(scenario.shrinkageConfig).toFixed(1)}%
+                          {formatPercentageValue(getTotalShrinkage(scenario.shrinkageConfig))}
                         </td>
                       ))}
                     </tr>
@@ -182,7 +183,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                       </td>
                       {selectedScenarioObjects.map(scenario => (
                         <td key={scenario.id} className="border border-gray-300 dark:border-gray-600 p-3 text-center text-sm">
-                          {scenario.createdAt.toLocaleDateString('pt-BR')}
+                          {new Date(scenario.createdAt).toLocaleDateString('pt-BR')}
                         </td>
                       ))}
                     </tr>
@@ -211,7 +212,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                         <div className={`text-2xl font-bold ${
                           metric.fteDifference > 0 ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {metric.fteDifference > 0 ? '+' : ''}{Math.round(metric.fteDifference)}
+                          {metric.fteDifference > 0 ? '+' : ''}{formatInteger(metric.fteDifference)}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           Diferença FTE
@@ -221,7 +222,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                         <div className={`text-2xl font-bold ${
                           metric.slaDifference > 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {metric.slaDifference > 0 ? '+' : ''}{metric.slaDifference.toFixed(1)}%
+                          {metric.slaDifference > 0 ? '+' : ''}{formatPercentageValue(metric.slaDifference)}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           Diferença SLA
@@ -231,7 +232,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                         <div className={`text-2xl font-bold ${
                           metric.shrinkageDifference > 0 ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {metric.shrinkageDifference > 0 ? '+' : ''}{metric.shrinkageDifference.toFixed(1)}%
+                          {metric.shrinkageDifference > 0 ? '+' : ''}{formatPercentageValue(metric.shrinkageDifference)}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           Diferença Shrinkage
@@ -292,10 +293,10 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
                                   ? 'text-green-600' 
                                   : 'text-red-600'
                               }`}>
-                                {result.serviceLevel.toFixed(1)}%
+                                {formatPercentageValue(result.serviceLevel)}
                               </td>
                               <td className="border border-gray-300 dark:border-gray-600 p-2 text-center text-gray-900 dark:text-gray-100">
-                                {result.averageWaitTime.toFixed(1)}s
+                                {formatTime(result.averageWaitTime)}
                               </td>
                             </React.Fragment>
                           ) : (

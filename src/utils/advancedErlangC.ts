@@ -4,6 +4,7 @@ import {
   ShrinkageConfig, 
   IntervalResult 
 } from '../types';
+import { roundToDecimals } from './formatters';
 
 // Função para calcular o fatorial de forma otimizada
 function factorial(n: number): number {
@@ -161,11 +162,11 @@ export function calculateAdvancedErlangC(
       calls,
       requiredAgents,
       requiredAgentsWithShrinkage,
-      serviceLevel: Math.round(finalServiceLevel * 100) / 100,
-      averageWaitTime: Math.round(finalWaitTime * 100) / 100,
-      probabilityOfWaiting: Math.round(probabilityWaiting * 10000) / 100,
-      occupancyRate: Math.round(occupancy * 10000) / 100,
-      traffic: Math.round(traffic * 100) / 100
+      serviceLevel: roundToDecimals(finalServiceLevel, 2),
+      averageWaitTime: roundToDecimals(finalWaitTime, 2),
+      probabilityOfWaiting: roundToDecimals(probabilityWaiting, 2),
+      occupancyRate: roundToDecimals(occupancy, 2),
+      traffic: roundToDecimals(traffic, 2)
     };
   });
 }
@@ -176,7 +177,7 @@ export function calculateTotalFTE(results: IntervalResult[]): number {
   
   // Assumir que cada resultado representa um intervalo e calcular a média ponderada
   const totalAgentHours = results.reduce((sum, result) => sum + result.requiredAgentsWithShrinkage, 0);
-  return Math.round((totalAgentHours / results.length) * 100) / 100;
+  return roundToDecimals(totalAgentHours / results.length, 2);
 }
 
 // Função para calcular nível de serviço médio
@@ -184,7 +185,7 @@ export function calculateAverageServiceLevel(results: IntervalResult[]): number 
   if (results.length === 0) return 0;
   
   const totalServiceLevel = results.reduce((sum, result) => sum + result.serviceLevel, 0);
-  return Math.round((totalServiceLevel / results.length) * 100) / 100;
+  return roundToDecimals(totalServiceLevel / results.length, 2);
 }
 
 // Função para validar forecast

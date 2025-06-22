@@ -37,6 +37,7 @@ import {
   calculateAverageServiceLevel 
 } from '../utils/advancedErlangC';
 import { exportToCSV, exportToPDF, exportSummaryToPDF } from '../utils/exportUtils';
+import { formatDecimal, formatPercentageValue, formatFTE, formatTime } from '../utils/formatters';
 
 const ResultsPage: React.FC = () => {
   const { state, dispatch, getCurrentOperation } = useApp();
@@ -346,8 +347,8 @@ const ResultsPage: React.FC = () => {
                   {forecast.name}
                 </h4>
                 <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <p>FTE Total: {forecast.totalFTE}</p>
-                  <p>SLA Médio: {forecast.averageServiceLevel}%</p>
+                  <p>FTE Total: {forecast.totalFTE ? formatFTE(forecast.totalFTE) : 'N/A'}</p>
+                  <p>SLA Médio: {forecast.averageServiceLevel ? formatPercentageValue(forecast.averageServiceLevel) : 'N/A'}</p>
                   <p>Intervalos: {forecast.points.length}</p>
                 </div>
               </motion.div>
@@ -379,8 +380,8 @@ const ResultsPage: React.FC = () => {
                   {scenario.name}
                 </h4>
                 <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <p>FTE Total: {scenario.totalFTE}</p>
-                  <p>SLA Médio: {scenario.averageServiceLevel}%</p>
+                  <p>FTE Total: {scenario.totalFTE ? formatFTE(scenario.totalFTE) : 'N/A'}</p>
+                  <p>SLA Médio: {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}</p>
                 </div>
               </motion.button>
             ))}
@@ -445,7 +446,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
                 FTE Total
               </p>
               <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                {scenario.totalFTE}
+                {scenario.totalFTE ? formatFTE(scenario.totalFTE) : 'N/A'}
               </p>
             </div>
             <Users className="w-10 h-10 text-blue-600 dark:text-blue-400" />
@@ -464,7 +465,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
                 SLA Médio
               </p>
               <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                {scenario.averageServiceLevel}%
+                {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}
               </p>
             </div>
             <Target className="w-10 h-10 text-green-600 dark:text-green-400" />
@@ -502,7 +503,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
                 Ocupação Média
               </p>
               <p className="text-3xl font-bold text-orange-700 dark:text-orange-300">
-                {avgOccupancy.toFixed(1)}%
+                {formatPercentageValue(avgOccupancy)}
               </p>
             </div>
             <Activity className="w-10 h-10 text-orange-600 dark:text-orange-400" />
@@ -521,7 +522,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
                 Prob. de Espera
               </p>
               <p className="text-3xl font-bold text-red-700 dark:text-red-300">
-                {(avgProbabilityOfWaiting * 100).toFixed(1)}%
+                {formatPercentageValue(avgProbabilityOfWaiting * 100)}
               </p>
             </div>
             <Clock className="w-10 h-10 text-red-600 dark:text-red-400" />
@@ -540,7 +541,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
                 ASA (Tempo Espera)
               </p>
               <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
-                {avgWaitTime.toFixed(0)}s
+                {formatTime(avgWaitTime)}
               </p>
             </div>
             <Zap className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
@@ -687,7 +688,7 @@ const DetailedView: React.FC<DetailedViewProps> = ({ scenario }) => {
                     {result.calls}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                    {result.traffic}
+                    {formatDecimal(result.traffic)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
                     {result.requiredAgents}
@@ -700,16 +701,13 @@ const DetailedView: React.FC<DetailedViewProps> = ({ scenario }) => {
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {result.serviceLevel}%
+                    {formatPercentageValue(result.serviceLevel)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                    {result.averageWaitTime > 60 
-                      ? `${Math.floor(result.averageWaitTime / 60)}m ${(result.averageWaitTime % 60).toFixed(0)}s`
-                      : `${result.averageWaitTime.toFixed(1)}s`
-                    }
+                    {formatTime(result.averageWaitTime)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                    {result.occupancyRate}%
+                    {formatPercentageValue(result.occupancyRate)}
                   </td>
                 </tr>
               ))}
@@ -758,7 +756,7 @@ const DetailedView: React.FC<DetailedViewProps> = ({ scenario }) => {
                             ? 'text-yellow-600 dark:text-yellow-400'
                             : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {slaCompliance.toFixed(1)}%
+                        {formatPercentageValue(slaCompliance)}
                       </span>
                     </div>
                   </>
@@ -783,13 +781,13 @@ const DetailedView: React.FC<DetailedViewProps> = ({ scenario }) => {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Ocupação Média:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        {avgOccupancy.toFixed(1)}%
+                        {formatPercentageValue(avgOccupancy)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Variação:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        {minOccupancy.toFixed(1)}% - {maxOccupancy.toFixed(1)}%
+                        {formatPercentageValue(minOccupancy)} - {formatPercentageValue(maxOccupancy)}
                       </span>
                     </div>
                   </>
@@ -814,13 +812,13 @@ const DetailedView: React.FC<DetailedViewProps> = ({ scenario }) => {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Impacto Shrinkage:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        +{shrinkageImpact.toFixed(1)}%
+                        +{formatPercentageValue(shrinkageImpact)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Agentes Extras:</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        +{totalAgentsWithShrinkage - totalAgentsBase}
+                        +{formatDecimal(totalAgentsWithShrinkage - totalAgentsBase, 0)}
                       </span>
                     </div>
                   </>
@@ -893,16 +891,16 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ scenarios }) => {
                       {scenario.name}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                      {scenario.totalFTE}
+                      {scenario.totalFTE ? formatFTE(scenario.totalFTE) : 'N/A'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                      {scenario.averageServiceLevel}%
+                      {scenario.averageServiceLevel ? formatPercentageValue(scenario.averageServiceLevel) : 'N/A'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
                       {peakAgents}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                      {avgOccupancy.toFixed(1)}%
+                      {formatPercentageValue(avgOccupancy)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {index === 0 ? (
@@ -921,7 +919,7 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ scenarios }) => {
                                 ? 'text-green-600 dark:text-green-400'
                                 : 'text-gray-600 dark:text-gray-400'
                           }`}>
-                            {fteDifference > 0 ? '+' : ''}{fteDifference}
+                            {fteDifference > 0 ? '+' : ''}{formatFTE(fteDifference)}
                           </span>
                         </div>
                       )}

@@ -23,6 +23,8 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Operation, Forecast, Scenario } from '../../types';
+import { formatFTE, formatPercentageValue } from '../../utils/formatters';
 
 interface AnalyticsProps {
   className?: string;
@@ -32,11 +34,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ className = '' }) => {
   const { state } = useApp();
 
   // Dados para gráficos de exemplo baseados nos dados reais
-  const operationsData = state.operations.map((op, index) => ({
+  const operationsData = state.operations.map((op: Operation, index: number) => ({
     name: op.name.substring(0, 10) + (op.name.length > 10 ? '...' : ''),
-    forecasts: state.forecasts.filter(f => f.operationId === op.id).length,
-    scenarios: state.scenarios.filter(s => s.operationId === op.id).length,
-    results: state.scenarios.filter(s => s.operationId === op.id && s.results).length,
+    forecasts: state.forecasts.filter((f: Forecast) => f.operationId === op.id).length,
+    scenarios: state.scenarios.filter((s: Scenario) => s.operationId === op.id).length,
+    results: state.scenarios.filter((s: Scenario) => s.operationId === op.id && s.results).length,
   }));
 
   // Dados de tendência temporal (últimos 7 dias simulados)
@@ -52,7 +54,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ className = '' }) => {
   });
 
   // Dados para gráfico de pizza - distribuição de tipos de operação
-  const operationTypes = state.operations.reduce((acc, op) => {
+  const operationTypes = state.operations.reduce((acc: Record<string, number>, op: Operation) => {
     const type = op.type === '24h' ? '24 Horas' : 'Horário Específico';
     acc[type] = (acc[type] || 0) + 1;
     return acc;
@@ -66,12 +68,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ className = '' }) => {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   // Métricas de resumo
-  const totalResults = state.scenarios.filter(s => s.results && s.results.length > 0).length;
+  const totalResults = state.scenarios.filter((s: Scenario) => s.results && s.results.length > 0).length;
   const avgFTE = state.scenarios.length > 0 
-    ? state.scenarios.reduce((sum, s) => sum + (s.totalFTE || 0), 0) / state.scenarios.length 
+    ? state.scenarios.reduce((sum: number, s: Scenario) => sum + (s.totalFTE || 0), 0) / state.scenarios.length 
     : 0;
   const avgServiceLevel = state.scenarios.length > 0
-    ? state.scenarios.reduce((sum, s) => sum + (s.averageServiceLevel || 0), 0) / state.scenarios.length
+    ? state.scenarios.reduce((sum: number, s: Scenario) => sum + (s.averageServiceLevel || 0), 0) / state.scenarios.length
     : 0;
 
   return (
@@ -128,7 +130,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ className = '' }) => {
                 FTE Médio
               </p>
               <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                {avgFTE.toFixed(0)}
+                {formatFTE(avgFTE)}
               </p>
             </div>
             <Users className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -147,7 +149,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ className = '' }) => {
                 SLA Médio
               </p>
               <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
-                {avgServiceLevel.toFixed(1)}%
+                {formatPercentageValue(avgServiceLevel)}
               </p>
             </div>
             <Activity className="w-8 h-8 text-orange-600 dark:text-orange-400" />
