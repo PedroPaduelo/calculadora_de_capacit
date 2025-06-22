@@ -36,11 +36,14 @@ import {
   calculateTotalFTE, 
   calculateAverageServiceLevel 
 } from '../utils/advancedErlangC';
+import { exportToCSV, exportToPDF, exportSummaryToPDF } from '../utils/exportUtils';
 
 const ResultsPage: React.FC = () => {
   const { state, dispatch, getCurrentOperation } = useApp();
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [viewType, setViewType] = useState<'overview' | 'detailed' | 'comparison'>('overview');
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<{ start: string; end: string } | null>(null);
   
   const currentOperation = getCurrentOperation();
   const operationForecasts = currentOperation 
@@ -87,6 +90,15 @@ const ResultsPage: React.FC = () => {
 
   // Se não há cenários, usar o primeiro forecast como fonte de dados
   const selectedForecast = operationForecasts[0];
+  // Função para filtrar resultados por intervalo de tempo
+  const filterResultsByTime = (results: IntervalResult[] | undefined) => {
+    if (!results || !timeFilter) return results;
+    
+    return results.filter(result => {
+      return result.time >= timeFilter.start && result.time <= timeFilter.end;
+    });
+  };
+
   const displayData = selectedScenarioData || (selectedForecast ? {
     id: selectedForecast.id,
     name: selectedForecast.name,
@@ -94,12 +106,17 @@ const ResultsPage: React.FC = () => {
     forecastId: selectedForecast.id,
     serviceParameters: selectedForecast.serviceParameters,
     shrinkageConfig: selectedForecast.shrinkageConfig,
-    results: selectedForecast.results,
+    results: filterResultsByTime(selectedForecast.results),
     totalFTE: selectedForecast.totalFTE!,
     averageServiceLevel: selectedForecast.averageServiceLevel!,
     createdAt: selectedForecast.createdAt,
     updatedAt: selectedForecast.updatedAt
   } : null);
+
+  // Aplicar filtro de tempo ao displayData se existir
+  if (displayData && displayData.results && timeFilter) {
+    displayData.results = filterResultsByTime(displayData.results);
+  }
 
   if (!currentOperation) {
     return (
@@ -165,16 +182,152 @@ const ResultsPage: React.FC = () => {
             ))}
           </div>
 
-          <motion.button
-            className="btn-primary"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </motion.button>
+          {/* Export Dropdown */}
+          {displayData && (
+            <div className="relative">
+              <motion.button
+                onClick={() => setShowExportOptions(!showExportOptions)}
+                className="btn-primary relative"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+                <ArrowDown className="w-4 h-4 ml-2" />
+              </motion.button>
+              
+              {showExportOptions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+                >
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        exportToCSV(displayData);
+                        setShowExportOptions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2 inline" />
+                      Exportar CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        exportToPDF(displayData);
+                        setShowExportOptions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2 inline" />
+                      Relatório PDF Completo
+                    </button>
+                    <button
+                      onClick={() => {
+                        exportSummaryToPDF(displayData);
+                        setShowExportOptions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2 inline" />
+                      Resumo Executivo PDF
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Time Filter */}
+      {displayData && displayData.results && displayData.results.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Filtro por Intervalo de Tempo
+              </h3>
+            </div>
+            
+            {timeFilter && (
+              <button
+                onClick={() => setTimeFilter(null)}
+                className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Limpar Filtro
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Horário Inicial
+              </label>
+              <input
+                type="time"
+                value={timeFilter?.start || ''}
+                onChange={(e) => setTimeFilter(prev => ({ 
+                  start: e.target.value, 
+                  end: prev?.end || '23:59' 
+                }))}
+                className="input-field"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Horário Final
+              </label>
+              <input
+                type="time"
+                value={timeFilter?.end || ''}
+                onChange={(e) => setTimeFilter(prev => ({ 
+                  start: prev?.start || '00:00', 
+                  end: e.target.value 
+                }))}
+                className="input-field"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              {/* Presets de Horários */}
+              {[
+                { label: 'Manhã', start: '06:00', end: '12:00' },
+                { label: 'Tarde', start: '12:00', end: '18:00' },
+                { label: 'Noite', start: '18:00', end: '23:59' },
+                { label: 'Comercial', start: '08:00', end: '18:00' }
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => setTimeFilter({ start: preset.start, end: preset.end })}
+                  className="px-3 py-2 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {timeFilter && displayData.results && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>Filtro aplicado:</strong> {timeFilter.start} - {timeFilter.end}
+                <span className="ml-2 text-blue-600 dark:text-blue-400">
+                  ({displayData.results.length} intervalos exibidos)
+                </span>
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Forecast Selector */}
       {operationForecasts.length > 0 && (
@@ -266,6 +419,8 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
   const peakAgents = Math.max(...results.map(r => r.requiredAgentsWithShrinkage));
   const totalTraffic = results.reduce((sum, r) => sum + r.traffic, 0);
   const avgOccupancy = results.reduce((sum, r) => sum + r.occupancyRate, 0) / results.length;
+  const avgProbabilityOfWaiting = results.reduce((sum, r) => sum + r.probabilityOfWaiting, 0) / results.length;
+  const avgWaitTime = results.reduce((sum, r) => sum + r.averageWaitTime, 0) / results.length;
   
   const chartData = results.map(result => ({
     time: result.time,
@@ -278,7 +433,7 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -351,6 +506,44 @@ const OverviewView: React.FC<OverviewViewProps> = ({ scenario }) => {
               </p>
             </div>
             <Activity className="w-10 h-10 text-orange-600 dark:text-orange-400" />
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="card-kpi bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                Prob. de Espera
+              </p>
+              <p className="text-3xl font-bold text-red-700 dark:text-red-300">
+                {(avgProbabilityOfWaiting * 100).toFixed(1)}%
+              </p>
+            </div>
+            <Clock className="w-10 h-10 text-red-600 dark:text-red-400" />
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="card-kpi bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                ASA (Tempo Espera)
+              </p>
+              <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                {avgWaitTime.toFixed(0)}s
+              </p>
+            </div>
+            <Zap className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
           </div>
         </motion.div>
       </div>

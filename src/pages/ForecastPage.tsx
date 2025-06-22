@@ -1114,6 +1114,84 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                   </div>
                 </div>
 
+                {/* Custom Factors */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Fatores Personalizados
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShrinkageConfig(prev => ({
+                        ...prev,
+                        customFactors: [
+                          ...prev.customFactors,
+                          { name: '', percentage: 0 }
+                        ]
+                      }))}
+                      className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      <Plus className="w-3 h-3 mr-1 inline" />
+                      Adicionar Fator
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {shrinkageConfig.customFactors.map((factor, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={factor.name}
+                            onChange={(e) => {
+                              const updatedFactors = [...shrinkageConfig.customFactors];
+                              updatedFactors[index].name = e.target.value;
+                              setShrinkageConfig(prev => ({ ...prev, customFactors: updatedFactors }));
+                            }}
+                            placeholder="Nome do fator (ex: Sazonalidade)"
+                            className="input-field text-sm"
+                          />
+                        </div>
+                        <div className="w-24">
+                          <input
+                            type="number"
+                            value={factor.percentage}
+                            onChange={(e) => {
+                              const updatedFactors = [...shrinkageConfig.customFactors];
+                              updatedFactors[index].percentage = Number(e.target.value);
+                              setShrinkageConfig(prev => ({ ...prev, customFactors: updatedFactors }));
+                            }}
+                            placeholder="0"
+                            className="input-field text-sm text-center"
+                            min="0"
+                            max="50"
+                            step="0.5"
+                          />
+                        </div>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 w-4">%</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedFactors = shrinkageConfig.customFactors.filter((_, i) => i !== index);
+                            setShrinkageConfig(prev => ({ ...prev, customFactors: updatedFactors }));
+                          }}
+                          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {shrinkageConfig.customFactors.length === 0 && (
+                      <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
+                        Nenhum fator personalizado adicionado.
+                        <br />
+                        Use para incluir fatores como sazonalidade, projetos especiais, etc.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Shrinkage Summary */}
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center justify-between">
@@ -1138,6 +1216,53 @@ const ForecastFormModal: React.FC<ForecastFormModalProps> = ({
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Breakdown dos fatores */}
+                  {(shrinkageConfig.customFactors.length > 0 || totalShrinkage > 0) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Detalhamento:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {shrinkageConfig.regularBreaks > 0 && (
+                          <div className="flex justify-between">
+                            <span>Pausas:</span>
+                            <span>{shrinkageConfig.regularBreaks}%</span>
+                          </div>
+                        )}
+                        {shrinkageConfig.training > 0 && (
+                          <div className="flex justify-between">
+                            <span>Treinamentos:</span>
+                            <span>{shrinkageConfig.training}%</span>
+                          </div>
+                        )}
+                        {shrinkageConfig.meetings > 0 && (
+                          <div className="flex justify-between">
+                            <span>Reuniões:</span>
+                            <span>{shrinkageConfig.meetings}%</span>
+                          </div>
+                        )}
+                        {shrinkageConfig.absenteeism > 0 && (
+                          <div className="flex justify-between">
+                            <span>Absenteísmo:</span>
+                            <span>{shrinkageConfig.absenteeism}%</span>
+                          </div>
+                        )}
+                        {shrinkageConfig.other > 0 && (
+                          <div className="flex justify-between">
+                            <span>Outros:</span>
+                            <span>{shrinkageConfig.other}%</span>
+                          </div>
+                        )}
+                        {shrinkageConfig.customFactors.map((factor, index) => (
+                          factor.name && factor.percentage > 0 && (
+                            <div key={index} className="flex justify-between">
+                              <span>{factor.name}:</span>
+                              <span>{factor.percentage}%</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

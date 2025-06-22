@@ -416,29 +416,90 @@ const OperationFormModal: React.FC<OperationFormModalProps> = ({
 
           {/* Horários (apenas se não for 24h) */}
           {formData.type === 'specific-hours' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Horário de Início
-                </label>
-                <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-                  className="input-field"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Horário de Fim
-                </label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-                  className="input-field"
-                />
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Configuração de Horário de Funcionamento
+                  </h4>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
+                      Início das Atividades
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                        className="input-field pl-10 bg-white dark:bg-gray-800"
+                      />
+                      <Clock className="w-4 h-4 text-blue-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
+                      Fim das Atividades
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                        className="input-field pl-10 bg-white dark:bg-gray-800"
+                      />
+                      <Clock className="w-4 h-4 text-blue-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Preview de Duração */}
+                {formData.startTime && formData.endTime && (
+                  <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Duração da operação:</span>
+                      <span className="font-medium text-blue-600 dark:text-blue-400">
+                        {(() => {
+                          const start = new Date(`2000-01-01 ${formData.startTime}`);
+                          const end = new Date(`2000-01-01 ${formData.endTime}`);
+                          const diffMs = end.getTime() - start.getTime();
+                          const diffHours = diffMs / (1000 * 60 * 60);
+                          return diffHours > 0 ? `${diffHours.toFixed(1)} horas` : 'Horário inválido';
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Presets de Horários Comuns */}
+                <div className="mt-4">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">Presets comuns:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Comercial', start: '08:00', end: '18:00' },
+                      { label: 'Extendido', start: '07:00', end: '22:00' },
+                      { label: 'Manhã', start: '06:00', end: '14:00' },
+                      { label: 'Tarde', start: '14:00', end: '22:00' }
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          startTime: preset.start, 
+                          endTime: preset.end 
+                        }))}
+                        className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        {preset.label} ({preset.start} - {preset.end})
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}

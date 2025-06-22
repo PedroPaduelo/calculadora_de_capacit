@@ -72,14 +72,22 @@ export function calculateTotalShrinkage(shrinkageConfig: ShrinkageConfig): numbe
   return Math.min(totalShrinkage, 80); // Limite máximo de 80% de shrinkage
 }
 
+// Função para calcular tráfego ajustado com taxa de abandono
+function calculateAdjustedTraffic(calls: number, aht: number, abandonmentRate: number = 0): number {
+  // Taxa de abandono reduz o número efetivo de chamadas que precisam ser atendidas
+  const effectiveCalls = calls * (1 - abandonmentRate / 100);
+  return (effectiveCalls * aht) / 3600; // Converter para Erlangs
+}
+
 // Função para encontrar o número mínimo de agentes para um intervalo
 function findMinimumAgents(
   calls: number, 
   aht: number, 
   targetServiceLevel: number, 
-  targetAnswerTime: number
+  targetAnswerTime: number,
+  abandonmentRate: number = 0
 ): number {
-  const traffic = (calls * aht) / 3600; // Converter para Erlangs
+  const traffic = calculateAdjustedTraffic(calls, aht, abandonmentRate);
   
   if (traffic <= 0) return 0;
   
@@ -109,7 +117,8 @@ export function calculateAdvancedErlangC(
   return forecastPoints.map(point => {
     const calls = point.calls;
     const aht = point.aht || serviceParameters.defaultAht;
-    const traffic = (calls * aht) / 3600;
+    const abandonmentRate = serviceParameters.abandonmentRate || 0;
+    const traffic = calculateAdjustedTraffic(calls, aht, abandonmentRate);
     
     if (calls <= 0) {
       return {
@@ -129,7 +138,8 @@ export function calculateAdvancedErlangC(
       calls,
       aht,
       serviceParameters.serviceLevel,
-      serviceParameters.targetAnswerTime
+      serviceParameters.targetAnswerTime,
+      abandonmentRate
     );
     
     const requiredAgentsWithShrinkage = Math.ceil(requiredAgents * shrinkageMultiplier);
